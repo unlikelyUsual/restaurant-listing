@@ -1,5 +1,6 @@
 import type Elysia from "elysia";
 import { t } from "elysia";
+import auth from "../config/auth";
 import Logger from "../config/logger";
 import User from "../models/User";
 
@@ -7,6 +8,7 @@ const logger = new Logger("User controller");
 
 export const userController = async (app: Elysia) =>
   app
+    .use(auth)
     .get("/users", async () => {
       //TODO : add authentication for admin user
       const res = await new User().getAll();
