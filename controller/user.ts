@@ -1,16 +1,16 @@
 import type Elysia from "elysia";
 import { t } from "elysia";
-import auth from "../config/auth";
 import Logger from "../config/logger";
+import { isAuthenticated } from "../middleware/auth";
 import User from "../models/User";
+import { E_ROLES } from "../utils/enums";
 
 const logger = new Logger("User controller");
 
-export const userController = async (app: Elysia) =>
+export const userController = (app: Elysia) =>
   app
-    .use(auth)
-    .get("/users", async () => {
-      //TODO : add authentication for admin user
+    .use(isAuthenticated(E_ROLES.ADMIN))
+    .get("/users", async (context) => {
       const res = await new User().getAll();
       if (res.length == 0) return { users: [], message: "No users found" };
       return { users: res, message: "Users fetched" };
@@ -21,10 +21,21 @@ export const userController = async (app: Elysia) =>
         try {
           const { id } = handler.query;
 
-          const user = await new User().getById(id);
+          const userRes = await new User().getById(parseInt(id));
+
+          if (userRes.length !== 1) {
+            handler.set.status = 400;
+            return { message: "Invalid user id" };
+          }
+
+          const user = userRes[0];
 
           //@ts-ignore
-          const token = await handler.jwt.sign({ id, email: user.email });
+          const token = await handler.jwt.sign({
+            id,
+            email: user.email,
+            type: user.type,
+          });
 
           return { access_token: token, user };
         } catch (err) {
@@ -34,7 +45,7 @@ export const userController = async (app: Elysia) =>
       },
       {
         query: t.Object({
-          id: t.Number(),
+          id: t.String(),
         }),
       }
     );

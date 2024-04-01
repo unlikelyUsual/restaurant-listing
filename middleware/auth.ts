@@ -1,19 +1,39 @@
-import type Elysia from "elysia";
+import Elysia from "elysia";
+import Logger from "../config/logger";
+import type { E_ROLES } from "../utils/enums";
 
-export const auth = (app: Elysia) => {
-  app.derive(async (context) => {
-    const auth =
-      context.headers["authorization"] || context.headers["Authorization"];
-    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+const logger = new Logger("Auth Middleware");
+
+export const isAuthenticated = (role: E_ROLES) => (app: Elysia) =>
+  app.onBeforeHandle({ as: "local" }, async (context) => {
     //@ts-ignore
-    const { id } = context.jwt.verify(token);
-    if (!id) {
-      context.set.status = 401;
+    const { headers, set, jwt } = context;
+    const auth = headers["authorization"] || headers["Authorization"];
+    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+
+    logger.log(`Token > `, token);
+
+    if (!token) {
+      set.status = 401;
       return {
         message: "Unauthorized",
       };
     }
 
-    return { uid: id };
+    //@ts-ignore
+    const { id, type } = await jwt.verify(token);
+
+    if (!id) {
+      set.status = 401;
+      return {
+        message: "Unauthorized",
+      };
+    }
+
+    if (type !== role) {
+      set.status = 401;
+      return {
+        message: "Unauthorized",
+      };
+    }
   });
-};

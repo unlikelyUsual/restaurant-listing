@@ -17,10 +17,13 @@ export default class BaseModel<T, K> {
   };
 
   getAll = async (): Promise<T[]> => {
-    return (await db.select().from(this.schema).all()) as any;
+    return (await db.select().from(this.schema).all()) as T[];
   };
 
   getById = async (id: number) => {
-    return await db.select().from(this.schema).where(eq(this.schema.id, id));
+    return (await db
+      .select()
+      .from(this.schema)
+      .where(eq(this.schema.id, id))) as T;
   };
 }

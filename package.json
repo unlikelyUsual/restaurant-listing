@@ -1,5 +1,5 @@
 {
-  "name": "restraunts-listing",
+  "name": "restaurants-listing",
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
@@ -7,6 +7,10 @@
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "dev": "bun run --watch index.ts",
+    "run": "bun run index.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.0.2",

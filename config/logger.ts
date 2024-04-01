@@ -1,3 +1,5 @@
+import { consoleColors } from "../utils/enums";
+
 export default class Logger {
   private namespace: string = "";
 
@@ -6,14 +8,26 @@ export default class Logger {
   }
 
   log = (message: unknown, ...rest: any[]): void => {
-    console.log(this.namespace, message, ...rest);
+    console.log(
+      `${consoleColors.fg.blue} ${this.namespace} =>`,
+      message,
+      ...rest
+    );
   };
 
   error = (message: unknown, ...rest: any[]): void => {
-    console.error(this.namespace, message, ...rest);
+    console.error(
+      `${consoleColors.fg.white} ${this.namespace} =>`,
+      message,
+      ...rest
+    );
   };
 
   warn = (message: unknown, ...rest: any[]): void => {
-    console.warn(this.namespace, message, ...rest);
+    console.warn(
+      `${consoleColors.fg.white} ${this.namespace} =>`,
+      message,
+      ...rest
+    );
   };
 }
