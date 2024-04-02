@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import auth from "./config/auth";
-import { userController } from "./controller/user";
+import { userController } from "./controller/user.controller";
 
 const app = new Elysia();
 

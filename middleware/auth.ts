@@ -4,14 +4,14 @@ import type { E_ROLES } from "../utils/enums";
 
 const logger = new Logger("Auth Middleware");
 
-export const isAuthenticated = (role: E_ROLES) => (app: Elysia) =>
-  app.onBeforeHandle({ as: "local" }, async (context) => {
+export const isAuthenticated = (roles: E_ROLES[]) => (app: Elysia) =>
+  app.onBeforeHandle(async (context) => {
     //@ts-ignore
     const { headers, set, jwt } = context;
     const auth = headers["authorization"] || headers["Authorization"];
     const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
 
-    logger.log(`Token > `, token);
+    logger.log(`Token => `, token);
 
     if (!token) {
       set.status = 401;
@@ -30,10 +30,12 @@ export const isAuthenticated = (role: E_ROLES) => (app: Elysia) =>
       };
     }
 
-    if (type !== role) {
+    if (!roles.includes(type)) {
       set.status = 401;
       return {
         message: "Unauthorized",
       };
     }
+
+    context.headers.uid = id;
   });
