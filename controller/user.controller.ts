@@ -14,6 +14,7 @@ export const userController = (app: Elysia) =>
         .post(
           "/signup",
           async (context) => {
+            logger.log(`Sign up ... `);
             const { name, password, email, type, address, phone } =
               context.body;
 
@@ -48,6 +49,7 @@ export const userController = (app: Elysia) =>
         .post(
           "/login",
           async (context) => {
+            logger.log(`Login  ... `);
             const { email, password } = context.body;
             //@ts-ignore
             const { set, jwt } = context;
@@ -102,29 +104,34 @@ export const userController = (app: Elysia) =>
       app
         .use(isAuthenticated([E_ROLES.ADMIN]))
         .get("/users", async (context) => {
+          logger.log(`Get Users List ... `);
           const res = await new UserTable().getAll();
           logger.log(`Headers : `, context.headers);
           if (res.length == 0) return { users: [], message: "No users found" };
           return { users: res, message: "Users fetched" };
         })
     )
-    .use(isAuthenticated([E_ROLES.ADMIN, E_ROLES.OWNER, E_ROLES.USER]))
-    .get("/user", async (context) => {
-      if (!context.headers.uid) {
-        context.set.status = 400;
-        return { message: "User token is invalid" };
-      }
+    .group("/all", (app) =>
+      app
+        .use(isAuthenticated([E_ROLES.ADMIN, E_ROLES.OWNER, E_ROLES.USER]))
+        .get("/user", async (context) => {
+          logger.log(`Get User ... `);
+          if (!context.headers.uid) {
+            context.set.status = 400;
+            return { message: "User token is invalid" };
+          }
 
-      const userRes = await new UserTable().getById(
-        parseInt(context.headers.uid)
-      );
+          const userRes = await new UserTable().getById(
+            parseInt(context.headers.uid)
+          );
 
-      if (userRes.length !== 1) {
-        context.set.status = 400;
-        return { message: "Invalid user id" };
-      }
+          if (userRes.length !== 1) {
+            context.set.status = 400;
+            return { message: "Invalid user id" };
+          }
 
-      const user = userRes[0];
+          const user = userRes[0];
 
-      return { user };
-    });
+          return { user };
+        })
+    );

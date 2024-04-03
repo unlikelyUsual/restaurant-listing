@@ -1,9 +1,10 @@
+import { inArray } from "drizzle-orm";
 import type Elysia from "elysia";
 import { t } from "elysia";
 import Logger from "../config/logger";
 import { isAuthenticated } from "../middleware/auth";
 import RestaurantTable from "../models/Restaurant";
-import ReviewTable from "../models/Review";
+import ReviewTable, { type TInsertReview } from "../models/Review";
 import { constants } from "../utils/constants";
 import { E_ROLES } from "../utils/enums";
 
@@ -11,22 +12,27 @@ const logger = new Logger("Review controller");
 
 export const reviewController = (app: Elysia) =>
   app
-    .group("user", (app) =>
+    .group("review", (app) =>
       app
-        .use(isAuthenticated([E_ROLES.OWNER]))
+        .use(isAuthenticated([E_ROLES.USER]))
         .post(
-          "review",
+          "user",
           async (context) => {
+            logger.log("Adding Review ... ");
             const { body, set, headers } = context;
             try {
               const { restaurantId, review, stars } = body;
 
-              const res = new ReviewTable().insert({
+              const reviewRow: TInsertReview = {
                 restaurant: restaurantId,
                 stars,
                 user: headers.uid,
                 ...(review && { review }),
-              });
+              };
+
+              const res = await new ReviewTable().insert(reviewRow);
+
+              logger.log("Response from insert : ", res);
 
               return { message: "Review posted!" };
             } catch (err) {
@@ -45,33 +51,45 @@ export const reviewController = (app: Elysia) =>
             }),
           }
         )
-        .get("reviews", async (context) => {
-          const { headers, set, query } = context;
-
-          const { reviewId, restaurantId } = query;
-
-          const uid = headers.uid;
-
-          const reviewTable = new ReviewTable();
-
-          const reviews = reviewId
-            ? await reviewTable.getById(parseInt(reviewId))
-            : await reviewTable.get({
-                where: {
-                  [ReviewTable.schema.restaurant]: restaurantId,
-                  [ReviewTable.schema.user]: uid,
-                },
-              });
-
-          return { reviews, message: "Fetched!" };
-        })
-    )
-    .group(
-      "owner",
-      (app) =>
-        app.post(
-          "reply",
+        .get(
+          "user",
           async (context) => {
+            logger.log(`Get user reviews  ... `);
+            const { headers, set, query } = context;
+
+            const { reviewId, restaurantId } = query;
+
+            const uid = headers.uid;
+
+            const reviewTable = new ReviewTable();
+
+            const reviews = reviewId
+              ? await reviewTable.getById(parseInt(reviewId))
+              : await reviewTable.get({
+                  where: {
+                    [ReviewTable.schema.restaurant.name]:
+                      parseInt(restaurantId),
+                    [ReviewTable.schema.user.name]: uid,
+                  },
+                });
+
+            return { reviews, message: "Fetched!" };
+          },
+          {
+            query: t.Object({
+              reviewId: t.Optional(t.String()),
+              restaurantId: t.String(),
+            }),
+          }
+        )
+    )
+    .group("owner", (app) =>
+      app
+        .use(isAuthenticated([E_ROLES.OWNER]))
+        .post(
+          "review/reply",
+          async (context) => {
+            logger.log(`Reply reviews ... `);
             const { body, set, headers } = context;
             try {
               const { reply, reviewId } = body;
@@ -126,5 +144,35 @@ export const reviewController = (app: Elysia) =>
             }),
           }
         )
-      //   .get('/reviews')
+        .get("reviews", async (context) => {
+          logger.log(`Get Reviews List ... `);
+          const { set, headers } = context;
+          try {
+            const res = await new RestaurantTable().getByAttribute(
+              RestaurantTable.schema.owner,
+              headers.uid
+            );
+
+            if (res.length < 1) {
+              return { message: "No restaurant found" };
+            }
+
+            const restaurantsIds = res.map((item) => item.id);
+
+            logger.log("Restaurants fetched : ", restaurantsIds);
+
+            const reviews = await new ReviewTable().getByAttribute(
+              ReviewTable.schema.restaurant,
+              restaurantsIds,
+              //@ts-ignore
+              inArray
+            );
+
+            return { reviews };
+          } catch (err) {
+            logger.error(err);
+            set.status = 500;
+            return { message: "Something went wrong" };
+          }
+        })
     );

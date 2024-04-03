@@ -12,11 +12,11 @@ export type TInsertUser = typeof UserTable.schema.$inferInsert; // insert type
 export default class UserTable extends BaseModel<TGetUser, TInsertUser> {
   static schema: SQLiteTableWithColumns<any> = sqliteTable("users", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    fullName: text("full_name"),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull(),
+    password: text("password").notNull(),
+    type: text("type").notNull(),
     phone: text("phone"),
-    email: text("email"),
-    password: text("password"),
-    type: text("type"),
   });
 
   constructor() {

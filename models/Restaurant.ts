@@ -14,13 +14,15 @@ export default class RestaurantTable extends BaseModel<
   TGetRestaurant,
   TInsertRestaurant
 > {
-  static schema: SQLiteTableWithColumns<any> = sqliteTable("reviews", {
+  static schema: SQLiteTableWithColumns<any> = sqliteTable("restaurants", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    owner: integer("owner").references(() => UserTable.schema.id),
-    name: text("name"),
-    phone: text("phone"),
-    stars: integer("stars"),
-    address: text("type"),
+    owner: integer("user_id")
+      .references(() => UserTable.schema.id)
+      .notNull(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(),
+    stars: integer("stars").notNull(),
+    address: text("address").notNull(),
     city: text("city"),
     state: text("state"),
     country: text("country"),

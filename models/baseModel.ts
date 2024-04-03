@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { SQL, eq, sql, type BinaryOperator } from "drizzle-orm";
 import type { SQLiteTableWithColumns } from "drizzle-orm/sqlite-core";
 import { db } from "../config/db";
 
@@ -31,9 +31,13 @@ export default class BaseModel<T, K> {
       .where(eq(this.schema.id, id))) as T[];
   };
 
-  getByAttribute = async (att: keyof T, value: any): Promise<T[]> => {
+  getByAttribute = async (
+    att: keyof T,
+    value: any,
+    operator: BinaryOperator | SQL = eq
+  ): Promise<T[]> => {
     //@ts-ignore
-    return await db.select().from(this.schema).where(eq(att, value));
+    return await db.select().from(this.schema).where(operator(att, value));
   };
 
   get = async (p: {
@@ -49,7 +53,7 @@ export default class BaseModel<T, K> {
     const sqlStr = Object.keys(where)
       //@ts-ignore
       .map((key) => `"${key}" = '${where[key]}' `)
-      .join(" AND ");
+      .join("AND ");
 
     query.where(sql`${sqlStr}`);
 
@@ -65,6 +69,8 @@ export default class BaseModel<T, K> {
     if (offset) {
       query.offset(offset);
     }
+
+    console.log(query.getSQL());
 
     return (await query) as T[];
   };

@@ -14,18 +14,18 @@ export type TInsertReview = typeof ReviewTable.schema.$inferInsert; // insert ty
 export default class ReviewTable extends BaseModel<TGetReview, TInsertReview> {
   static schema: SQLiteTableWithColumns<any> = sqliteTable("reviews", {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    restaurant: integer("restaurant")
+    restaurant: integer("restaurant_id")
       .references(() => RestaurantTable.schema.id)
       .notNull(),
-    review: text("review"),
-    user: integer("user")
+    user: integer("user_id")
       .references(() => UserTable.schema.id)
       .notNull(),
-    reply: text("reply"),
     stars: integer("stars").notNull(),
+    review: text("review"),
+    reply: text("reply"),
   });
 
   constructor() {
-    super(UserTable.schema);
+    super(ReviewTable.schema);
   }
 }
